@@ -1,0 +1,38 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/ERC20.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\n\ncontract ERC20 {\n    uint public totalSupply;\n    mapping(address => uint) public balanceOf;\n    mapping(address => mapping(address => uint)) public allowance;\n    string public name = \"Solidity by Example\";\n    string public symbol = \"SOLBYEX\";\n    uint8 public decimals = 18;\n\n\t\tevent Transfer(address indexed from, address indexed to, uint value);\n    event Approval(address indexed owner, address indexed spender, uint value);\n\n    function transfer(address recipient, uint amount) external returns (bool) {\n        balanceOf[msg.sender] -= amount;\n        balanceOf[recipient] += amount;\n        emit Transfer(msg.sender, recipient, amount);\n        return true;\n    }\n\n    function approve(address spender, uint amount) external returns (bool) {\n        allowance[msg.sender][spender] = amount;\n        emit Approval(msg.sender, spender, amount);\n        return true;\n    }\n\n    function transferFrom(\n        address sender,\n        address recipient,\n        uint amount\n    ) external returns (bool) {\n        allowance[sender][msg.sender] -= amount;\n        balanceOf[sender] -= amount;\n        balanceOf[recipient] += amount;\n        emit Transfer(sender, recipient, amount);\n        return true;\n    }\n\n    function mint(uint amount) external {\n        balanceOf[msg.sender] += amount;\n        totalSupply += amount;\n        emit Transfer(address(0), msg.sender, amount);\n    }\n\n    function burn(uint amount) external {\n        balanceOf[msg.sender] -= amount;\n        totalSupply -= amount;\n        emit Transfer(msg.sender, address(0), amount);\n    }\n}\n"
+    },
+    "contracts/Vault.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\n\ninterface IERC20 {\n    function totalSupply() external view returns (uint);\n\n    function balanceOf(address account) external view returns (uint);\n\n    function transfer(address recipient, uint amount) external returns (bool);\n\n    function allowance(address owner, address spender) external view returns (uint);\n\n    function approve(address spender, uint amount) external returns (bool);\n\n    function transferFrom(\n        address sender,\n        address recipient,\n        uint amount\n    ) external returns (bool);\n\n    event Transfer(address indexed from, address indexed to, uint value);\n    event Approval(address indexed owner, address indexed spender, uint value);\n}\n\ncontract Vault {\n    IERC20 public immutable token;\n\n    uint public totalSupply;\n    mapping(address => uint) public balanceOf;\n\n    constructor(address _token) {\n        token = IERC20(_token);\n    }\n\n    function _mint(address _to, uint _shares) private {\n        totalSupply += _shares;\n        balanceOf[_to] += _shares;\n    }\n\n    function _burn(address _from, uint _shares) private {\n        totalSupply -= _shares;\n        balanceOf[_from] -= _shares;\n    }\n\n    function deposit(uint _amount) external {\n        /*\n        a = amount\n        B = balance of token before deposit\n        T = total supply\n        s = shares to mint\n\n        (T + s) / T = (a + B) / B \n\n        s = aT / B\n        */\n        uint shares;\n        if (totalSupply == 0) {\n            shares = _amount;\n        } else {\n            shares = (_amount * totalSupply) / token.balanceOf(address(this));\n        }\n\n        _mint(msg.sender, shares);\n        token.transferFrom(msg.sender, address(this), _amount);\n    }\n\n    function withdraw(uint _shares) external {\n        /*\n        a = amount\n        B = balance of token before withdraw\n        T = total supply\n        s = shares to burn\n\n        (T - s) / T = (B - a) / B \n\n        a = sB / T\n        */\n        uint amount = (_shares * token.balanceOf(address(this))) / totalSupply;\n        _burn(msg.sender, _shares);\n        token.transfer(msg.sender, amount);\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
